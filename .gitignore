@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+*.pyc.*
+local_settings.py
+db.sqlite3
+
+# Django migrations
+*/migrations/*
+!.*/migrations/__init__.py
+
+# SQL files
+*.sql
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# dotenv
+.env
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Virtual environments
+venv/
+env/
+ENV/
