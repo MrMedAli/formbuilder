@@ -5,8 +5,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, logout
 from .models import User, Form, Preset, FormResponse
+from rest_framework.permissions import AllowAny
 from .serializers import UserSerializer, FormSerializer, PresetSerializer, FormResponseSerializer, RegisterSerializer
-
+from django.contrib.auth import update_session_auth_hash
+from .serializers import ChangePasswordSerializer
+from rest_framework import generics, status
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
@@ -60,7 +63,7 @@ class IsAdminUser(permissions.BasePermission):
 class FormViewSet(viewsets.ModelViewSet):
     queryset = Form.objects.all()
     serializer_class = FormSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -92,6 +95,34 @@ def get_form(request, pk):
         return Response(FormSerializer(form).data)
     except Form.DoesNotExist:
         return Response({'error': 'Form not found'}, status=404)
+class ChangePasswordView(generics.UpdateAPIView):
+    serializer_class = ChangePasswordSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = self.get_object()
+        old_password = serializer.validated_data.get('old_password')
+        new_password = serializer.validated_data.get('new_password')
+        
+        if not user.check_password(old_password):
+            return Response({'error': 'Old password is not correct'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(new_password)
+        user.save()
+        update_session_auth_hash(request, user)
+        return Response({'message': 'Password updated successfully'}, status=status.HTTP_200_OK)
+    
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_form(request):
+    forms = Form.objects.all()
+    serializer = FormSerializer(forms, many=True)
+    return Response(serializer.data)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -105,5 +136,18 @@ def submit_form_response(request, pk):
         return Response({'error': 'Form not found'}, status=404)
     except Exception as e:
         return Response({'error': str(e)}, status=400)
+    
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_form_response(request, pk):
+    try:
+        response = FormResponse.objects.get(pk=pk)
+        response.delete()
+        return Response({'message': 'Response deleted successfully'})
+    except FormResponse.DoesNotExist:
+        return Response({'error': 'Response not found'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)
+    
 
 

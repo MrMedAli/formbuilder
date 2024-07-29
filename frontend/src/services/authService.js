@@ -26,6 +26,8 @@ const login = (username, password) => {
 
 const logout = () => {
   const user = JSON.parse(localStorage.getItem('user'));
+  localStorage.removeItem('user'); // Clear local storage immediately
+
   if (user && user.refresh) {
     const config = {
       headers: {
@@ -35,14 +37,13 @@ const logout = () => {
     axios.post(API_URL + 'logout/', {
       refresh: user.refresh,
     }, config).then(() => {
-      localStorage.removeItem('user');
-      window.location.href = '/';
+      window.location.href = '/'; // Redirect to login page
     }).catch((error) => {
       console.error('Failed to logout:', error);
+      window.location.href = '/'; // Redirect to login page even if API request fails
     });
   } else {
-    localStorage.removeItem('user');
-    window.location.href = '/';
+    window.location.href = '/'; // Redirect to login page if no user or refresh token
   }
 };
 
@@ -58,6 +59,20 @@ const getAuthHeader = () => {
     return {};
   }
 };
+const changePassword = (currentPassword, newPassword) => {
+  const user = JSON.parse(localStorage.getItem("user"));
+  const token = user?.access;
+
+  return axios.put(API_URL + "change-password/", {
+    old_password: currentPassword,
+    new_password: newPassword
+  }, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
 
 export default {
   register,
@@ -65,4 +80,5 @@ export default {
   logout,
   getCurrentUser,
   getAuthHeader,
+  changePassword,
 };
