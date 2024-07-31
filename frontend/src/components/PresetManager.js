@@ -18,6 +18,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import authService from "../services/authService";
+import { parseJwt } from "../utils/jwtUtils"; // Import the utility function
 
 const API_URL = "http://localhost:8000/api/forms/";
 
@@ -30,13 +31,22 @@ const PresetManager = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [filterText, setFilterText] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false); // State for admin check
+  const [currentUserId, setCurrentUserId] = useState(null); // State for current user ID
 
   useEffect(() => {
     fetchForms();
+    const currentUser = authService.getCurrentUser();
+    const token = currentUser?.access;
+
+    if (token) {
+      const decoded = parseJwt(token);
+      setIsAdmin(decoded?.is_admin ?? false); // Set admin status
+      setCurrentUserId(decoded?.user_id ?? null); // Set the current user ID
+    }
   }, []);
 
   useEffect(() => {
-    // Filter forms based on the filterText
     const filtered = forms.filter((form) =>
       form.title.toLowerCase().includes(filterText.toLowerCase())
     );
@@ -165,12 +175,16 @@ const PresetManager = () => {
                   </Typography>
                 </CardContent>
                 <CardActions sx={{ justifyContent: 'flex-end' }}>
-                  <IconButton aria-label="edit" onClick={() => handleEditClick(form)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton aria-label="delete" onClick={() => handleDelete(form.id)}>
-                    <DeleteIcon />
-                  </IconButton>
+                  {(isAdmin || form.created_by === currentUserId) && (
+                    <>
+                      <IconButton aria-label="edit" onClick={() => handleEditClick(form)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton aria-label="delete" onClick={() => handleDelete(form.id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </>
+                  )}
                 </CardActions>
               </Card>
             </Grid>

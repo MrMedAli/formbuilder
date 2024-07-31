@@ -38,6 +38,7 @@ urlpatterns = [
     path('api/forms/<int:pk>/', views.get_form, name='get_form'),
     path('api/auth/change-password/', views.ChangePasswordView.as_view(), name='change_password'),
     path('responses/<int:response_id>/', views.delete_form_response, name='delete_form_response'),
+    path('api/user-info/', views.user_info, name='user_info'),
     path('api/forms/<int:pk>/submit/', views.submit_form_response, name='submit_form_response'),
     path('accounts/', include('allauth.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

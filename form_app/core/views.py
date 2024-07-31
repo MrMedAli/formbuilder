@@ -39,6 +39,16 @@ def login_view(request):
         print("Invalid credentials for username:", username)
         return Response({'error': 'Invalid credentials'}, status=400)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_info(request):
+    user = request.user
+    return Response({
+        'is_admin': user.is_superuser,
+        'username': user.username,
+        'email': user.email,
+    })
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_view(request):

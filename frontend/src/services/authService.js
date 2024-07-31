@@ -53,12 +53,14 @@ const getCurrentUser = () => {
 
 const getAuthHeader = () => {
   const user = getCurrentUser();
+  console.log('Current User:', user); // Log user information
   if (user && user.access) {
     return { Authorization: 'Bearer ' + user.access };
   } else {
     return {};
   }
 };
+
 const changePassword = (currentPassword, newPassword) => {
   const user = JSON.parse(localStorage.getItem("user"));
   const token = user?.access;

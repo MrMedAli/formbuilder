@@ -137,7 +137,7 @@ const UserManager = () => {
               <TableRow key={user.id}>
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>{user.is_staff ? "Yes" : "No"}</TableCell>
+                <TableCell>{user.is_admin ? "Yes" : "No"}</TableCell>
                 <TableCell align="right">
                   <IconButton
                     aria-label="edit"
