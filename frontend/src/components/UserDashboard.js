@@ -9,35 +9,35 @@ const Item = styled(Paper)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
-const AdminDashboard = () => {
+const UserDashboard = () => {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Typography variant="h4" gutterBottom>
-        Admin Dashboard
+        User Dashboard
       </Typography>
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>
           <Item>
-            <Typography variant="h6">Total Users</Typography>
-            <Typography variant="h4">100</Typography>
+            <Typography variant="h6">My Forms</Typography>
+            <Typography variant="h4">20</Typography>
           </Item>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Item>
-            <Typography variant="h6">Total Forms</Typography>
-            <Typography variant="h4">50</Typography>
+            <Typography variant="h6">Completed Forms</Typography>
+            <Typography variant="h4">15</Typography>
           </Item>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Item>
-            <Typography variant="h6">Active Forms</Typography>
-            <Typography variant="h4">30</Typography>
+            <Typography variant="h6">Pending Forms</Typography>
+            <Typography variant="h4">5</Typography>
           </Item>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Item>
-            <Typography variant="h6">Form Submissions</Typography>
-            <Typography variant="h4">500</Typography>
+            <Typography variant="h6">Notifications</Typography>
+            <Typography variant="h4">3</Typography>
           </Item>
         </Grid>
       </Grid>
@@ -45,4 +45,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default UserDashboard;

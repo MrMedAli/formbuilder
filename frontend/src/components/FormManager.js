@@ -1,14 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Formik, Form, Field } from 'formik';
-import * as Yup from 'yup';
-import authService from '../services/authService';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import authService from "../services/authService";
 
-const API_URL = 'http://localhost:8000/api/forms/';
+const API_URL = "http://localhost:8000/api/forms/";
 
 const FormManager = () => {
   const [forms, setForms] = useState([]);
   const [selectedForm, setSelectedForm] = useState(null);
+  const [title, setTitle] = useState("");
+  const [formStructure, setFormStructure] = useState("");
 
   useEffect(() => {
     fetchForms();
@@ -16,76 +29,119 @@ const FormManager = () => {
 
   const fetchForms = async () => {
     try {
-      const response = await axios.get(API_URL, { headers: authService.getAuthHeader() });
+      const response = await axios.get(API_URL, {
+        headers: authService.getAuthHeader(),
+      });
       setForms(response.data);
     } catch (error) {
-      console.error('Failed to fetch forms:', error);
+      console.error("Failed to fetch forms:", error);
     }
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     try {
+      const formData = {
+        title,
+        form_structure: JSON.parse(formStructure),
+      };
       if (selectedForm) {
-        await axios.put(`${API_URL}${selectedForm.id}/`, values, { headers: authService.getAuthHeader() });
+        await axios.put(`${API_URL}${selectedForm.id}/`, formData, {
+          headers: authService.getAuthHeader(),
+        });
       } else {
-        await axios.post(API_URL, values, { headers: authService.getAuthHeader() });
+        await axios.post(API_URL, formData, {
+          headers: authService.getAuthHeader(),
+        });
       }
       fetchForms();
       setSelectedForm(null);
+      setTitle("");
+      setFormStructure("");
     } catch (error) {
-      console.error('Failed to save form:', error);
+      console.error("Failed to save form:", error);
     }
   };
 
   const handleDelete = async (formId) => {
     try {
-      await axios.delete(`${API_URL}${formId}/`, { headers: authService.getAuthHeader() });
+      await axios.delete(`${API_URL}${formId}/`, {
+        headers: authService.getAuthHeader(),
+      });
       fetchForms();
     } catch (error) {
-      console.error('Failed to delete form:', error);
+      console.error("Failed to delete form:", error);
     }
   };
 
-  const formSchema = Yup.object().shape({
-    title: Yup.string().required('Title is required'),
-    form_structure: Yup.object().required('Form structure is required'),
-  });
-
   return (
-    <div>
-      <h2>Form Manager</h2>
-      <Formik
-        initialValues={selectedForm || { title: '', form_structure: {} }}
-        enableReinitialize
-        validationSchema={formSchema}
-        onSubmit={handleSubmit}
-      >
-        {({ values }) => (
-          <Form>
-            <div>
-              <label>Title:</label>
-              <Field name="title" />
-            </div>
-            <div>
-              <label>Form Structure:</label>
-              <Field name="form_structure" as="textarea" />
-            </div>
-            <button type="submit">Save Form</button>
-          </Form>
-        )}
-      </Formik>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Form Manager
+      </Typography>
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <form onSubmit={handleSubmit}>
+          <TextField
+            fullWidth
+            label="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Form Structure (JSON)"
+            value={formStructure}
+            onChange={(e) => setFormStructure(e.target.value)}
+            required
+            multiline
+            rows={4}
+            sx={{ mb: 2 }}
+          />
+          <Button type="submit" variant="contained" color="primary">
+            {selectedForm ? "Update Form" : "Create Form"}
+          </Button>
+        </form>
+      </Paper>
 
-      <h3>Existing Forms</h3>
-      <ul>
+      <Typography variant="h5" gutterBottom>
+        Existing Forms
+      </Typography>
+      <List>
         {forms.map((form) => (
-          <li key={form.id}>
-            {form.title}
-            <button onClick={() => setSelectedForm(form)}>Edit</button>
-            <button onClick={() => handleDelete(form.id)}>Delete</button>
-          </li>
+          <ListItem
+            key={form.id}
+            secondaryAction={
+              <Box>
+                <IconButton
+                  edge="end"
+                  aria-label="edit"
+                  onClick={() => {
+                    setSelectedForm(form);
+                    setTitle(form.title);
+                    setFormStructure(
+                      JSON.stringify(form.form_structure, null, 2)
+                    );
+                  }}
+                >
+                  <EditIcon />
+                </IconButton>
+                <IconButton
+                  edge="end"
+                  aria-label="delete"
+                  onClick={() => handleDelete(form.id)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            }
+          >
+            <ListItemText primary={form.title} />
+          </ListItem>
         ))}
-      </ul>
-    </div>
+      </List>
+    </Box>
   );
 };
 

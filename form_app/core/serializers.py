@@ -34,3 +34,7 @@ class FormResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = FormResponse
         fields = '__all__'
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
