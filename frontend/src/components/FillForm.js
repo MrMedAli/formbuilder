@@ -19,10 +19,11 @@ import {
   IconButton,
   InputAdornment,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import authService from "../services/authService";
+import { parseJwt } from "../utils/jwtUtils";
 
 const FillForm = () => {
   const [forms, setForms] = useState([]);
@@ -34,8 +35,11 @@ const FillForm = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [newField, setNewField] = useState({ name: "", type: "string", itemType: "string" });
+  const [formTitles, setFormTitles] = useState({});
   const [showAddField, setShowAddField] = useState(false);
   const [addedFields, setAddedFields] = useState([]);
+  const [disabledFields, setDisabledFields] = useState({});
+  const [identifiers, setIdentifiers] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,7 +49,7 @@ const FillForm = () => {
 
     if (token) {
       const decoded = parseJwt(token);
-      setIsAdmin(decoded?.is_admin ?? false); // Set admin status
+      setIsAdmin(decoded?.is_admin ?? false);
     }
   }, []);
 
@@ -78,6 +82,12 @@ const FillForm = () => {
       const headers = authService.getAuthHeader();
       const response = await axios.get("http://localhost:8000/api/forms/", { headers });
       setForms(response.data);
+
+      const formTitleMap = response.data.reduce((map, form) => {
+        map[form.id] = form.title;
+        return map;
+      }, {});
+      setFormTitles(formTitleMap);
     } catch (error) {
       console.error("Failed to fetch forms:", error);
       if (error.response && error.response.status === 403) {
@@ -114,6 +124,14 @@ const FillForm = () => {
   };
 
   const handleChange = (field, value, index = null, subField = null) => {
+    const updateNestedObject = (obj, path, value) => {
+      const keys = path.split(".");
+      const lastKey = keys.pop();
+      const nestedObj = keys.reduce((acc, key) => acc[key] = acc[key] || {}, obj);
+      nestedObj[lastKey] = value;
+      return { ...response, ...obj };
+    };
+  
     if (index !== null) {
       const updatedArray = [...response[field]];
       if (subField) {
@@ -123,7 +141,7 @@ const FillForm = () => {
       }
       setResponse({ ...response, [field]: updatedArray });
     } else {
-      setResponse({ ...response, [field]: value });
+      setResponse(updateNestedObject(response, field, value));
     }
   };
 
@@ -176,21 +194,33 @@ const FillForm = () => {
     setAddedFields(updatedFields);
   };
 
-  const disableField = (index) => {
-    const updatedFields = addedFields.map((field, i) => 
-      i === index ? { ...field, disabled: !field.disabled } : field
-    );
-    setAddedFields(updatedFields);
+  const disableField = (field) => {
+    setDisabledFields((prevState) => ({
+      ...prevState,
+      [field]: !prevState[field],
+    }));
   };
 
   const handleSave = async () => {
     try {
       const headers = authService.getAuthHeader();
+      const currentUser = authService.getCurrentUser();
+      const userId = currentUser ? parseJwt(currentUser.access).user_id : null;
+  
+      // Filter out disabled fields before saving the response
+      const filteredResponse = Object.keys(response).reduce((acc, key) => {
+        if (!disabledFields[key]) {
+          acc[key] = response[key];
+        }
+        return acc;
+      }, {});
+  
       await axios.post(
         `http://localhost:8000/api/forms/${selectedFormId}/submit/`,
-        { response_data: response },
+        { response_data: filteredResponse, user: userId },
         { headers }
       );
+  
       alert("Form saved successfully");
       fetchSavedResponses(selectedFormId);
     } catch (error) {
@@ -236,263 +266,241 @@ const FillForm = () => {
     try {
       const headers = authService.getAuthHeader();
       await axios.delete(`http://localhost:8000/api/responses/${responseId}/`, { headers });
-      setSavedResponses(savedResponses.filter(response => response.id !== responseId));
-      filterResponses(searchTerm);
+      
+      const updatedSavedResponses = savedResponses.filter(response => response.id !== responseId);
+      setSavedResponses(updatedSavedResponses);
+  
+      if (searchTerm) {
+        filterResponses(searchTerm);
+      } else {
+        setFilteredResponses(updatedSavedResponses);
+      }
+      
+      alert("Response deleted successfully");
     } catch (error) {
       console.error("Failed to delete response:", error);
+      alert("Failed to delete response");
     }
   };
 
-  const renderFields = (structure, parentKey = "") => {
-    return Object.keys(structure).map((key) => {
-      const fieldType = structure[key];
-      const compositeKey = parentKey ? `${parentKey}.${key}` : key;
-
-      if (fieldType.type === "array") {
-        return (
-          <Grid item xs={12} key={compositeKey}>
-            <Typography variant="subtitle1">{key}:</Typography>
-            {response[compositeKey]?.map((item, index) => (
-              <Box key={index} mb={2}>
-                {fieldType.items?.type === "object" ? (
-                  renderFields(fieldType.items, `${compositeKey}[${index}]`)
-                ) : (
-                  <TextField
-                    fullWidth
-                    label={`${key} ${index + 1}`}
-                    type={fieldType.items?.type || "text"}
-                    value={fieldType.items?.type === "object" ? "" : item}
-                    onChange={(e) =>
-                      handleChange(compositeKey, e.target.value, index)
-                    }
-                    required
-                  />
-                )}
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  onClick={() => addArrayItem(compositeKey)}
-                >
-                  Add Item
-                </Button>
-              </Box>
-            ))}
-          </Grid>
-        );
-      }
-
-      if (fieldType.type === "object") {
-        return (
-          <Grid item xs={12} key={compositeKey}>
-            <Typography variant="subtitle1">{key}:</Typography>
-            {renderFields(fieldType, compositeKey)}
-          </Grid>
-        );
-      }
-
+  const renderFields = () => {
+    return Object.keys(form.form_structure).map((field, index) => {
+      const fieldType = form.form_structure[field];
+      const disabled = disabledFields[field];
+      const identifier = identifiers[field] || null;
+      const fieldComment = form.form_structure[field]?.comment || ""; // Fetch comment from form structure
+  
       return (
-        <Grid item xs={12} key={compositeKey}>
-          <TextField
-            fullWidth
-            label={key}
-            type={fieldType.type}
-            value={response[compositeKey] || ""}
-            onChange={(e) => handleChange(compositeKey, e.target.value)}
-            required
-            disabled={addedFields.find((field) => field.name === key)?.disabled}
-          />
+        <Grid container alignItems="center" key={field} spacing={2} sx={{ mb: 2 }}>
+          <Grid item xs={8}>
+            {fieldType.type === "array" ? (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  {field}
+                </Typography>
+                {response[field].map((item, idx) => (
+                  <Grid container alignItems="center" key={`${field}-${idx}`} spacing={1}>
+                    <Grid item xs={10}>
+                      {fieldType.items.type === "object" ? (
+                        Object.keys(fieldType.items.properties).map((subField) => (
+                          <TextField
+                            key={`${field}-${idx}-${subField}`}
+                            label={`${field} ${idx + 1} ${subField}`}
+                            value={item[subField] || ""}
+                            onChange={(e) => handleChange(field, e.target.value, idx, subField)}
+                            fullWidth
+                            disabled={disabled}
+                            InputProps={{
+                              startAdornment: identifier === field && (
+                                <InputAdornment position="start">
+                                  <Typography variant="caption" sx={{ color: "green" }}>
+                                    Primary Key
+                                  </Typography>
+                                </InputAdornment>
+                              ),
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <Typography variant="caption" sx={{ color: "grey" }}>
+                                    {fieldComment} {/* Display comment */}
+                                  </Typography>
+                                </InputAdornment>
+                              ),
+                            }}
+                          />
+                        ))
+                      ) : (
+                        <TextField
+                          label={`${field} ${idx + 1}`}
+                          value={item || ""}
+                          onChange={(e) => handleChange(field, e.target.value, idx)}
+                          fullWidth
+                          disabled={disabled}
+                          InputProps={{
+                            startAdornment: identifier === field && (
+                              <InputAdornment position="start">
+                                <Typography variant="caption" sx={{ color: "green" }}>
+                                  Primary Key
+                                </Typography>
+                              </InputAdornment>
+                            ),
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <Typography variant="caption" sx={{ color: "grey" }}>
+                                  {fieldComment} {/* Display comment */}
+                                </Typography>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                      )}
+                    </Grid>
+                    <Grid item xs={2}>
+                      <Button variant="contained" color="secondary" onClick={() => addArrayItem(field)}>
+                        Add Item
+                      </Button>
+                    </Grid>
+                  </Grid>
+                ))}
+              </>
+            ) : (
+              <TextField
+                label={field}
+                value={response[field] || ""}
+                onChange={(e) => handleChange(field, e.target.value)}
+                fullWidth
+                disabled={disabled}
+                InputProps={{
+                  startAdornment: identifier === field && (
+                    <InputAdornment position="start">
+                      <Typography variant="caption" sx={{ color: "green" }}>
+                        Primary Key
+                      </Typography>
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Typography variant="caption" sx={{ color: "grey" }}>
+                        {fieldComment} {/* Display comment */}
+                      </Typography>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            )}
+          </Grid>
+          <Grid item xs={4}>
+            <Button
+              onClick={() => disableField(field)}
+              startIcon={<VisibilityIcon />}
+              variant="outlined"
+              color="warning"
+              sx={{ mr: 1 }}
+            >
+              {disabled ? "Enable" : "Disable"}
+            </Button>
+          </Grid>
         </Grid>
       );
     });
   };
+  
+  
+  
+  
+  
+  
+  
+  
 
-  const parseJwt = (token) => {
-    try {
-      return JSON.parse(atob(token.split(".")[1]));
-    } catch (e) {
-      return null;
-    }
+  const renderResponseData = () => {
+    return (
+      <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Form Title</TableCell>
+              <TableCell>Response Data</TableCell>
+              {isAdmin && <TableCell>Actions</TableCell>}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredResponses.map((savedResponse) => (
+              <TableRow key={savedResponse.id}>
+                <TableCell>{formTitles[savedResponse.form]}</TableCell>
+                <TableCell>
+                  <pre>{JSON.stringify(savedResponse.response_data, null, 2)}</pre>
+                </TableCell>
+                {isAdmin && (
+                  <TableCell>
+                    <IconButton
+                      color="error"
+                      onClick={() => handleDelete(savedResponse.id)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
   };
 
   return (
-    <Box p={2}>
-      <Typography variant="h4">Fill Form</Typography>
-
-      <Box mt={2}>
-        <Select
-          fullWidth
-          value={selectedFormId}
-          onChange={(e) => setSelectedFormId(e.target.value)}
-        >
-          <MenuItem value="">Select a form</MenuItem>
-          {forms.map((form) => (
-            <MenuItem key={form.id} value={form.id}>
-              {form.title}
-            </MenuItem>
-          ))}
-        </Select>
-      </Box>
+    <Box sx={{ padding: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Fill Form
+      </Typography>
+      <Select
+        value={selectedFormId}
+        onChange={(e) => setSelectedFormId(e.target.value)}
+        displayEmpty
+        fullWidth
+      >
+        <MenuItem value="" disabled>
+          Select a Form
+        </MenuItem>
+        {forms.map((form) => (
+          <MenuItem key={form.id} value={form.id}>
+            {form.title}
+          </MenuItem>
+        ))}
+      </Select>
       {form && (
-        <Box mt={2}>
-          <Typography variant="h6">{form.title}</Typography>
-          <Typography variant="body1">{form.description}</Typography>
-          <Box mt={2}>
-            <Grid container spacing={2}>
-              {renderFields(form.form_structure)}
-            </Grid>
+        <Box sx={{ marginTop: 3 }}>
+          {renderFields(form.form_structure)}
+          <Box sx={{ display: 'flex', gap: 2, marginTop: 2 }}>
+            <Button onClick={handleSave} variant="contained" color="primary">
+              Save Response
+            </Button>
+            <Button onClick={handleDownload} variant="outlined" color="primary">
+              Download JSON
+            </Button>
           </Box>
-          {!isAdmin && (
-            <Box mt={2}>
-              {showAddField ? (
-                <>
-                  <TextField
-                    label="New Field Name"
-                    value={newField.name}
-                    onChange={(e) =>
-                      setNewField({ ...newField, name: e.target.value })
-                    }
-                    fullWidth
-                  />
-                  <br />
-                  <br />
-                  <Select
-                    value={newField.type}
-                    onChange={(e) =>
-                      setNewField({ ...newField, type: e.target.value })
-                    }
-                    fullWidth
-                  >
-                    <MenuItem value="string">String</MenuItem>
-                    <MenuItem value="number">Number</MenuItem>
-                    <MenuItem value="object">Object</MenuItem>
-                    <MenuItem value="array">Array</MenuItem>
-                  </Select>
-                  {newField.type === "array" && (
-                    <>
-                      <br />
-                      <Select
-                        value={newField.itemType}
-                        onChange={(e) =>
-                          setNewField({ ...newField, itemType: e.target.value })
-                        }
-                        fullWidth
-                      >
-                        <MenuItem value="string">String</MenuItem>
-                        <MenuItem value="number">Number</MenuItem>
-                      </Select>
-                    </>
-                  )}
-                  <br />
-                  <br />
-                  <Button variant="outlined" onClick={addField}>
-                    Add Field
-                  </Button>
-                </>
-              ) : (
-                <Button variant="outlined" onClick={() => setShowAddField(true)}>
-                  Add Field
-                </Button>
-              )}
-              {addedFields.map((field, index) => (
-                <Box mt={2} key={index}>
-                  <Typography variant="subtitle1">
-                    {field.name} ({field.type})
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label={field.name}
-                        type={field.type}
-                        value={response[field.name] || ""}
-                        onChange={(e) =>
-                          handleChange(field.name, e.target.value)
-                        }
-                        required
-                        disabled={field.disabled}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Button
-                        onClick={() => disableField(index)}
-                        startIcon={<VisibilityIcon />}
-                        variant="outlined"
-                        color="warning"
-                        sx={{ mr: 1 }}
-                      >
-                        {field.disabled ? "Enable" : "Disable"}
-                      </Button>
-                      <Button
-                        onClick={() => removeField(index)}
-                        startIcon={<DeleteIcon />}
-                        variant="outlined"
-                        color="error"
-                      >
-                        Remove
-                      </Button>
-                    </Grid>
-                  </Grid>
-                </Box>
-              ))}
-            </Box>
-          )}
-          <Box mt={2}>
-            <Button variant="contained" onClick={handleSave}>
-              Save
-            </Button>
-            <Button variant="outlined" onClick={handleDownload} sx={{ ml: 2 }}>
-              Download
-            </Button>
+          <Box sx={{ marginTop: 3 }}>
+            <TextField
+              label="Search"
+              value={searchTerm}
+              onChange={handleSearchChange}
+              variant="outlined"
+              fullWidth
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton>
+                      <SearchIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            {renderResponseData()}
           </Box>
         </Box>
       )}
-      <Box mt={2}>
-        <TextField
-          fullWidth
-          placeholder="Search responses..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-        <TableContainer component={Paper} sx={{ mt: 2 }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Response ID</TableCell>
-                <TableCell>Response Data</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredResponses.map((resp) => (
-                <TableRow key={resp.id}>
-                  <TableCell>{resp.id || "Unnamed"}</TableCell>
-                  <TableCell>
-                    {Object.keys(resp.response_data).length ? (
-                      <pre>{JSON.stringify(resp.response_data, null, 2)}</pre>
-                    ) : (
-                      "No Data"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    { (
-                      <IconButton color="error" onClick={() => handleDelete(resp.id)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
+    
     </Box>
   );
 };

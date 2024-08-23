@@ -28,8 +28,8 @@ const Login = () => {
     try {
       const response = await authService.login(username, password);
       if (response.access) {
-        navigate("/admin/dashboard", { replace: true });
-        window.location.replace("/admin/dashboard");
+        navigate("/admin/presets", { replace: true });
+        window.location.replace("/admin/presets");
       } else {
         setError("Login failed: Invalid credentials");
       }

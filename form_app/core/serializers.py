@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Form, Preset, FormResponse
+from .models import User, Form, Preset, FormResponse, FormField
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,6 +23,11 @@ class FormSerializer(serializers.ModelSerializer):
         model = Form
         fields = '__all__'
         read_only_fields = ('created_by',)
+
+class FormFieldSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FormField
+        fields = '__all__'
 
 
 class PresetSerializer(serializers.ModelSerializer):

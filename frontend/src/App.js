@@ -7,6 +7,7 @@ import {
   Link,
 } from "react-router-dom";
 import InfoIcon from '@mui/icons-material/Info';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Box from "@mui/material/Box";
@@ -26,7 +27,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 import EditIcon from "@mui/icons-material/Edit";
-import HelpIcon from '@mui/icons-material/Help';
+
 import SettingsIcon from "@mui/icons-material/Settings";
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -123,12 +124,11 @@ function App() {
   };
 
   const menuItems = [
-    { text: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
     { text: "Users", icon: <PeopleIcon />, path: "/admin/users" },
-    { text: "Presets", icon: <AddBoxIcon />, path: "/admin/presets" },
+    { text: "Presets", icon: <CreditCardIcon />, path: "/admin/presets" },
     { text: "Form Builder", icon: <AddBoxIcon />, path: "/admin/form-builder" },
-    { text: "Form Template", icon: <DynamicFormIcon />, path: "/admin/form-Template" },
-    { text: "Fill Form", icon: <EditIcon />, path: "/fill-form" },
+    { text: "Form Template", icon: <DynamicFormIcon />, path: "/admin/formtemplate" },
+    
   ];
 
   const filteredMenuItems = isAdmin
@@ -233,17 +233,10 @@ function App() {
               <Route
                 path="/"
                 element={
-                  currentUser ? <Navigate to="/admin/dashboard" /> : <Login />
+                  currentUser ? <Navigate to="admin/presets" /> : <Login />
                 }
               />
-              <Route
-                path="/admin/dashboard"
-                element={
-                  <PrivateRoute>
-                    {isAdmin ? <AdminDashboard /> : <UserDashboard />}
-                  </PrivateRoute>
-                }
-              />
+          
               <Route
                 path="/admin/users"
                 element={
@@ -277,7 +270,7 @@ function App() {
                 }
               />
               <Route
-                path="/admin/form-Template"
+                path="/admin/formtemplate"
                 element={
                   <PrivateRoute>
                     <FormTemplates />
@@ -353,7 +346,7 @@ function App() {
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <EmailIcon sx={{ mr: 1 }} />
                   <Typography variant="body1">
-                    <a href="mailto:dali@gmail.com">dali@gmail.com</a>
+                    <a href="mailto:dali@gmail.com">m.benelhajaissa@ateme.com</a>
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
