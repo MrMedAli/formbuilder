@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, logout
 from .models import User, Form, Preset, FormResponse, FormField
 from rest_framework.permissions import AllowAny
+from collections import OrderedDict
 from .serializers import UserSerializer, FormSerializer, PresetSerializer, FormResponseSerializer, RegisterSerializer
 from django.contrib.auth import update_session_auth_hash
 from .serializers import ChangePasswordSerializer, FormSerializer, FormFieldSerializer
@@ -76,21 +77,21 @@ class FormViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        form_structure = serializer.validated_data.get('form_structure', {})
+        form_structure = serializer.validated_data.get('form_structure', OrderedDict())
         first_field = list(form_structure.get('fields', []))[0].get('name') if form_structure.get('fields') else None
         serializer.save(
             created_by=self.request.user,
             identifier=first_field
         )
-    
 
     def perform_update(self, serializer):
-        form_structure = serializer.validated_data.get('form_structure', {})
+        form_structure = serializer.validated_data.get('form_structure', OrderedDict())
         first_field = list(form_structure.get('fields', []))[0].get('name') if form_structure.get('fields') else None
         serializer.save(
             created_by=self.request.user,
             identifier=first_field
         )
+
 
 class PresetViewSet(viewsets.ModelViewSet):
     queryset = Preset.objects.all()

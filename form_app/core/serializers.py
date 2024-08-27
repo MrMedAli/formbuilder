@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User, Form, Preset, FormResponse, FormField
+from collections import OrderedDict
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,6 +24,19 @@ class FormSerializer(serializers.ModelSerializer):
         model = Form
         fields = '__all__'
         read_only_fields = ('created_by',)
+
+    def to_representation(self, instance):
+        """Convert the `form_structure` field to an OrderedDict when returning data."""
+        representation = super().to_representation(instance)
+        if 'form_structure' in representation and isinstance(representation['form_structure'], dict):
+            representation['form_structure'] = OrderedDict(representation['form_structure'])
+        return representation
+
+    def to_internal_value(self, data):
+        """Convert the `form_structure` field to an OrderedDict when receiving data."""
+        if 'form_structure' in data and isinstance(data['form_structure'], dict):
+            data['form_structure'] = OrderedDict(data['form_structure'])
+        return super().to_internal_value(data)
 
 class FormFieldSerializer(serializers.ModelSerializer):
     class Meta:
