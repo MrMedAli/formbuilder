@@ -4,11 +4,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, logout
-from .models import User, Form, Preset, FormResponse
+from .models import User, Form, Preset, FormResponse, FormField
 from rest_framework.permissions import AllowAny
+from collections import OrderedDict
 from .serializers import UserSerializer, FormSerializer, PresetSerializer, FormResponseSerializer, RegisterSerializer
 from django.contrib.auth import update_session_auth_hash
-from .serializers import ChangePasswordSerializer
+from .serializers import ChangePasswordSerializer, FormSerializer, FormFieldSerializer
 from rest_framework import generics, status
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -39,6 +40,16 @@ def login_view(request):
         print("Invalid credentials for username:", username)
         return Response({'error': 'Invalid credentials'}, status=400)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_info(request):
+    user = request.user
+    return Response({
+        'is_admin': user.is_superuser,
+        'username': user.username,
+        'email': user.email,
+    })
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
@@ -66,10 +77,21 @@ class FormViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        form_structure = serializer.validated_data.get('form_structure', OrderedDict())
+        first_field = list(form_structure.get('fields', []))[0].get('name') if form_structure.get('fields') else None
+        serializer.save(
+            created_by=self.request.user,
+            identifier=first_field
+        )
 
     def perform_update(self, serializer):
-        serializer.save(created_by=self.request.user)
+        form_structure = serializer.validated_data.get('form_structure', OrderedDict())
+        first_field = list(form_structure.get('fields', []))[0].get('name') if form_structure.get('fields') else None
+        serializer.save(
+            created_by=self.request.user,
+            identifier=first_field
+        )
+
 
 class PresetViewSet(viewsets.ModelViewSet):
     queryset = Preset.objects.all()
@@ -87,6 +109,16 @@ class FormResponseViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(form_id=form_id)
         return queryset
 
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+    
+class FormFieldViewSet(viewsets.ModelViewSet):
+    queryset = FormField.objects.all()
+    serializer_class = FormFieldSerializer
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_form(request, pk):
@@ -148,6 +180,8 @@ def delete_form_response(request, pk):
         return Response({'error': 'Response not found'}, status=404)
     except Exception as e:
         return Response({'error': str(e)}, status=400)
+    
+
     
 
 

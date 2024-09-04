@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import apiUrl from '../config';
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
@@ -14,14 +15,16 @@ import {
   ListItemText,
   IconButton,
   Grid,
+  Tooltip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import authService from "../services/authService";
 
-const API_URL = "http://localhost:8000/api/forms/";
+const API_URL = `${apiUrl}/api/forms/`;
 
-const fieldTypes = ["string", "number", "object", "array"];
+const fieldTypes = ["string", "number", "array", "object"];
 
 const FormBuilder = () => {
   const [forms, setForms] = useState([]);
@@ -32,7 +35,7 @@ const FormBuilder = () => {
 
   useEffect(() => {
     fetchForms();
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const fetchForms = async () => {
     try {
@@ -48,22 +51,22 @@ const FormBuilder = () => {
     }
   };
 
-  const addField = (fields, setFields) => {
-    setFields([
-      ...fields,
+  const addField = () => {
+    setFormFields([
+      ...formFields,
       { name: "", type: "string", fields: [], itemType: "string" },
     ]);
   };
 
-  const removeField = (index, fields, setFields) => {
-    const newFormFields = fields.filter((_, i) => i !== index);
-    setFields(newFormFields);
+  const removeField = (index) => {
+    const newFormFields = formFields.filter((_, i) => i !== index);
+    setFormFields(newFormFields);
   };
 
-  const handleFieldChange = (index, field, fields, setFields) => {
-    const newFormFields = [...fields];
+  const handleFieldChange = (index, field) => {
+    const newFormFields = [...formFields];
     newFormFields[index] = field;
-    setFields(newFormFields);
+    setFormFields(newFormFields);
   };
 
   const handleSubmit = async (event) => {
@@ -143,8 +146,15 @@ const FormBuilder = () => {
 
   const renderFields = (fields, setFields) => {
     return fields.map((field, index) => (
-      <Grid container spacing={2} key={index} alignItems="center">
-        <Grid item xs={12} sm={4}>
+      <Grid container key={index} alignItems="center" spacing={3} sx={{ mb: 2 }}>
+        <Grid item xs={1} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {index === 0 && (
+            <Tooltip title="This is an identifier of this form">
+              <CheckCircleIcon color="success" />
+            </Tooltip>
+          )}
+        </Grid>
+        <Grid item xs={12} sm={4} sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <TextField
             fullWidth
             label="Field name"
@@ -152,17 +162,13 @@ const FormBuilder = () => {
             onChange={(e) =>
               handleFieldChange(
                 index,
-                { ...field, name: e.target.value },
-                fields,
-                setFields
+                { ...field, name: e.target.value }
               )
             }
             required
+            sx={{ mr: 2 }}
           />
-        </Grid>
-        <Grid item xs={12} sm={4}>
           <Select
-            fullWidth
             value={field.type}
             onChange={(e) =>
               handleFieldChange(
@@ -172,11 +178,10 @@ const FormBuilder = () => {
                   type: e.target.value,
                   fields: [],
                   itemType: "string",
-                },
-                fields,
-                setFields
+                }
               )
             }
+            sx={{ minWidth: 120, width: 150 }}
           >
             {fieldTypes.map((type) => (
               <MenuItem key={type} value={type}>
@@ -185,28 +190,49 @@ const FormBuilder = () => {
             ))}
           </Select>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        {field.type === "array" && (
+          <Grid item xs={12} sm={4} sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <Select
+              fullWidth
+              value={field.itemType}
+              onChange={(e) =>
+                handleFieldChange(
+                  index,
+                  { ...field, itemType: e.target.value, fields: [] }
+                )
+              }
+              sx={{ minWidth: 120, width: 150, ml: 2 }}
+            >
+              {fieldTypes.map((type) => (
+                <MenuItem key={type} value={type}>
+                  {type}
+                </MenuItem>
+              ))}
+            </Select>
+          </Grid>
+        )}
+        <Grid item xs={12} sm={3} sx={{ display: "flex", alignItems: "center" }}>
           <Button
-            onClick={() => removeField(index, fields, setFields)}
+            onClick={() => removeField(index)}
             startIcon={<DeleteIcon />}
             variant="outlined"
             color="error"
+            sx={{ ml: 2 }}
           >
             Remove
           </Button>
         </Grid>
         {field.type === "object" && (
           <Grid item xs={12}>
-            <Box sx={{ pl: 2 }}>
+            <Box sx={{ pl: 2, mt: 2 }}>
               <Button
                 onClick={() =>
-                  addField(field.fields, (newFields) =>
-                    handleFieldChange(
-                      index,
-                      { ...field, fields: newFields },
-                      fields,
-                      setFields
-                    )
+                  addField(
+                    (newFields) =>
+                      handleFieldChange(
+                        index,
+                        { ...field, fields: newFields }
+                      )
                   )
                 }
                 variant="outlined"
@@ -216,61 +242,10 @@ const FormBuilder = () => {
               {renderFields(field.fields, (newFields) =>
                 handleFieldChange(
                   index,
-                  { ...field, fields: newFields },
-                  fields,
-                  setFields
+                  { ...field, fields: newFields }
                 )
               )}
             </Box>
-          </Grid>
-        )}
-        {field.type === "array" && (
-          <Grid item xs={12}>
-            <Select
-              fullWidth
-              value={field.itemType}
-              onChange={(e) =>
-                handleFieldChange(
-                  index,
-                  { ...field, itemType: e.target.value, fields: [] },
-                  fields,
-                  setFields
-                )
-              }
-            >
-              {fieldTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
-                </MenuItem>
-              ))}
-            </Select>
-            {field.itemType === "object" && (
-              <Box sx={{ pl: 2 }}>
-                <Button
-                  onClick={() =>
-                    addField(field.fields, (newFields) =>
-                      handleFieldChange(
-                        index,
-                        { ...field, fields: newFields },
-                        fields,
-                        setFields
-                      )
-                    )
-                  }
-                  variant="outlined"
-                >
-                  Add Nested Field
-                </Button>
-                {renderFields(field.fields, (newFields) =>
-                  handleFieldChange(
-                    index,
-                    { ...field, fields: newFields },
-                    fields,
-                    setFields
-                  )
-                )}
-              </Box>
-            )}
           </Grid>
         )}
       </Grid>
@@ -298,7 +273,7 @@ const FormBuilder = () => {
           {renderFields(formFields, setFormFields)}
           <Button
             variant="contained"
-            onClick={() => addField(formFields, setFormFields)}
+            onClick={addField}
             sx={{ mt: 2 }}
           >
             Add Field
@@ -335,6 +310,19 @@ const FormBuilder = () => {
                         if (
                           typeof value === "object" &&
                           !Array.isArray(value) &&
+                          value.type !== "array"
+                        ) {
+                          return {
+                            name: key,
+                            type: "object",
+                            fields: Object.keys(value).map((nestedKey) => ({
+                              name: nestedKey,
+                              type: value[nestedKey],
+                              fields: [],
+                            })),
+                          };
+                        } else if (
+                          typeof value === "object" &&
                           value.type === "array"
                         ) {
                           return {
@@ -346,29 +334,18 @@ const FormBuilder = () => {
                                 : value.items,
                             fields:
                               typeof value.items === "object"
-                                ? Object.keys(value.items).map((nestedKey) => ({
-                                    name: nestedKey,
-                                    type: value.items[nestedKey],
-                                    fields: [],
-                                  }))
+                                ? Object.keys(value.items).map(
+                                    (nestedKey) => ({
+                                      name: nestedKey,
+                                      type: value.items[nestedKey],
+                                      fields: [],
+                                    })
+                                  )
                                 : [],
                           };
+                        } else {
+                          return { name: key, type: value, fields: [] };
                         }
-                        return {
-                          name: key,
-                          type:
-                            typeof value === "object" && !Array.isArray(value)
-                              ? "object"
-                              : value,
-                          fields:
-                            typeof value === "object" && !Array.isArray(value)
-                              ? Object.keys(value).map((nestedKey) => ({
-                                  name: nestedKey,
-                                  type: value[nestedKey],
-                                  fields: [],
-                                }))
-                              : [],
-                        };
                       })
                     );
                   }}
@@ -378,6 +355,7 @@ const FormBuilder = () => {
                 <IconButton
                   edge="end"
                   aria-label="delete"
+                  sx={{ ml: 2 }}
                   onClick={() => handleDelete(form.id)}
                 >
                   <DeleteIcon />

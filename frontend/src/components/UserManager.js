@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import apiUrl from '../config';
 import axios from "axios";
 import {
   Box,
@@ -18,7 +19,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import authService from "../services/authService";
 
-const API_URL = "http://localhost:8000/api/users/";
+const API_URL = `${apiUrl}/api/users/`;
 
 const UserManager = () => {
   const [users, setUsers] = useState([]);
@@ -137,7 +138,7 @@ const UserManager = () => {
               <TableRow key={user.id}>
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>{user.is_staff ? "Yes" : "No"}</TableCell>
+                <TableCell>{user.is_admin ? "Yes" : "No"}</TableCell>
                 <TableCell align="right">
                   <IconButton
                     aria-label="edit"

@@ -1,6 +1,7 @@
 import axios from 'axios';
+import apiUrl from '../config';
 
-const API_URL = 'http://localhost:8000/api/auth/';
+const API_URL = `${apiUrl}/api/auth/`;
 
 const register = (username, email, password, isAdmin) => {
   return axios.post(API_URL + 'register/', {
@@ -53,12 +54,14 @@ const getCurrentUser = () => {
 
 const getAuthHeader = () => {
   const user = getCurrentUser();
+  console.log('Current User:', user); // Log user information
   if (user && user.access) {
     return { Authorization: 'Bearer ' + user.access };
   } else {
     return {};
   }
 };
+
 const changePassword = (currentPassword, newPassword) => {
   const user = JSON.parse(localStorage.getItem("user"));
   const token = user?.access;
@@ -73,8 +76,7 @@ const changePassword = (currentPassword, newPassword) => {
   });
 };
 
-
-export default {
+const authService = {
   register,
   login,
   logout,
@@ -82,3 +84,5 @@ export default {
   getAuthHeader,
   changePassword,
 };
+
+export default authService;

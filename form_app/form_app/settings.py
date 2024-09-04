@@ -16,6 +16,11 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
 
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
 
+# Set API_URL from environment variable
+API_URL = os.getenv('API_URL', 'http://localhost:8000')
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -70,9 +75,9 @@ WSGI_APPLICATION = 'form_app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'formbuilder'),
-        'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'ghassen'),
+        'NAME': os.getenv('DB_NAME', 'your_db'),
+        'USER': os.getenv('DB_USER', 'your_user'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'your_password'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
     }
@@ -140,3 +145,5 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
+
+# You can now use the `API_URL` variable in your views, templates, or other settings

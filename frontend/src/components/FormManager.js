@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import apiUrl from '../config';
 import axios from "axios";
 import {
   Box,
@@ -15,7 +16,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import authService from "../services/authService";
 
-const API_URL = "http://localhost:8000/api/forms/";
+const API_URL = `${apiUrl}/api/forms/`;
 
 const FormManager = () => {
   const [forms, setForms] = useState([]);

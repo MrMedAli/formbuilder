@@ -14,6 +14,7 @@ router.register(r'users', views.UserViewSet)
 router.register(r'forms', views.FormViewSet)
 router.register(r'presets', views.PresetViewSet)
 router.register(r'responses', views.FormResponseViewSet)
+router.register(r'form-fields', views.FormFieldViewSet)
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -38,6 +39,7 @@ urlpatterns = [
     path('api/forms/<int:pk>/', views.get_form, name='get_form'),
     path('api/auth/change-password/', views.ChangePasswordView.as_view(), name='change_password'),
     path('responses/<int:response_id>/', views.delete_form_response, name='delete_form_response'),
+    path('api/user-info/', views.user_info, name='user_info'),
     path('api/forms/<int:pk>/submit/', views.submit_form_response, name='submit_form_response'),
     path('accounts/', include('allauth.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
