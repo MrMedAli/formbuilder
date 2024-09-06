@@ -1,9 +1,14 @@
 from rest_framework import generics, permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, logout
+from .models import Formulaire
+from .serializers import FormulaireSerializer
+from .models import FormsResponse
+from .serializers import FormsResponseSerializer
 from .models import User, Form, Preset, FormResponse, FormField
 from rest_framework.permissions import AllowAny
 from collections import OrderedDict
@@ -77,21 +82,21 @@ class FormViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        form_structure = serializer.validated_data.get('form_structure', OrderedDict())
-        first_field = list(form_structure.get('fields', []))[0].get('name') if form_structure.get('fields') else None
         serializer.save(
-            created_by=self.request.user,
-            identifier=first_field
+            created_by=self.request.user,  # This field is managed in the serializer.
+            identifier=None  # This field is managed in the serializer.
         )
 
     def perform_update(self, serializer):
-        form_structure = serializer.validated_data.get('form_structure', OrderedDict())
-        first_field = list(form_structure.get('fields', []))[0].get('name') if form_structure.get('fields') else None
         serializer.save(
-            created_by=self.request.user,
-            identifier=first_field
+            created_by=self.request.user,  # This field is managed in the serializer.
+            identifier=None  # This field is managed in the serializer.
         )
 
+
+class FormulaireViewSet(viewsets.ModelViewSet):
+    queryset = Formulaire.objects.all()
+    serializer_class = FormulaireSerializer
 
 class PresetViewSet(viewsets.ModelViewSet):
     queryset = Preset.objects.all()
@@ -182,6 +187,16 @@ def delete_form_response(request, pk):
         return Response({'error': str(e)}, status=400)
     
 
-    
+class FormsResponseViewSet(viewsets.ModelViewSet):
+    queryset = FormsResponse.objects.all()
+    serializer_class = FormsResponseSerializer
+
+    @action(detail=True, methods=['post'])
+    def submit(self, request, pk=None):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            form_response = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

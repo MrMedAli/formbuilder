@@ -14,6 +14,8 @@ router.register(r'users', views.UserViewSet)
 router.register(r'forms', views.FormViewSet)
 router.register(r'presets', views.PresetViewSet)
 router.register(r'responses', views.FormResponseViewSet)
+router.register(r'formulaires',views.FormulaireViewSet)
+router.register(r'form-responses', views.FormsResponseViewSet)
 router.register(r'form-fields', views.FormFieldViewSet)
 
 schema_view = get_schema_view(

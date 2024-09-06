@@ -75,13 +75,14 @@ WSGI_APPLICATION = 'form_app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'your_db'),
-        'USER': os.getenv('DB_USER', 'your_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'your_password'),
+        'NAME': os.getenv('DB_NAME', 'formbuilder'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'ghassen'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {

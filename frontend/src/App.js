@@ -6,6 +6,7 @@ import {
   Navigate,
   Link,
 } from "react-router-dom";
+import DriveEtaIcon from '@mui/icons-material/DriveEta';
 import InfoIcon from '@mui/icons-material/Info';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -25,7 +26,6 @@ import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import PeopleIcon from "@mui/icons-material/People";
 import AddBoxIcon from "@mui/icons-material/AddBox";
-
 import SettingsIcon from "@mui/icons-material/Settings";
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -38,7 +38,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import GitHubIcon from '@mui/icons-material/GitHub';
 
 import UserManager from "./components/UserManager";
-import FormBuilder from "./components/FormBuilder";
+import FormBuilderr from "./components/FormBuilderr"; // Importer FormBuilderr
 import PresetManager from "./components/PresetManager";
 import Login from "./components/Login";
 import FormManager from "./components/FormManager";
@@ -47,7 +47,11 @@ import PrivateRoute from "./components/PrivateRoute";
 import authService from "./services/authService";
 import ChangePassword from "./components/ChangePassword";
 import FormTemplates from "./components/FormTemplates";
-import apiUrl from './config';
+import FormBuilder from "./components/FormBuilder";
+import FormulaireList from "./components/FormulaireList";
+import FormView from "./components/FormView";
+import EditForm from "./components/EditForm";
+import FillForms from "./components/FillForms";
 
 const drawerWidth = 240;
 
@@ -125,7 +129,9 @@ function App() {
     { text: "Presets", icon: <CreditCardIcon />, path: "/admin/presets" },
     { text: "Form Builder", icon: <AddBoxIcon />, path: "/admin/form-builder" },
     { text: "Form Template", icon: <DynamicFormIcon />, path: "/admin/formtemplate" },
-    
+    { text: "Form Builderr", icon: <DynamicFormIcon />, path: "/admin/form-builderr" },
+    { text: "Fill Forms", icon: <DynamicFormIcon />, path: "/admin/fillforms" }, // Add FillForms here
+    // Add this line for FillForms
   ];
 
   const filteredMenuItems = isAdmin
@@ -137,7 +143,7 @@ function App() {
       <Toolbar />
       <List>
         {filteredMenuItems.map((item) => (
-          <ListItem button key={item.text} component={Link} to={item.path} onClick={item.onClick}>
+          <ListItem button key={item.text} component={Link} to={item.path}>
             <ListItemIcon>{item.icon}</ListItemIcon>
             <ListItemText primary={item.text} />
           </ListItem>
@@ -233,7 +239,6 @@ function App() {
                   currentUser ? <Navigate to="admin/presets" /> : <Login />
                 }
               />
-          
               <Route
                 path="/admin/users"
                 element={
@@ -250,11 +255,23 @@ function App() {
                   </PrivateRoute>
                 }
               />
+              <Route path="/formulaires" element={<FormulaireList />} />
+              <Route path="/formulaires/:id" element={<FormView />} />
+              <Route path="/formulaires/edit/:id" element={<EditForm />} />
               <Route
                 path="/admin/presets"
                 element={
                   <PrivateRoute>
                     <PresetManager />
+                  </PrivateRoute>
+                }
+              />
+  
+              <Route
+                path="/admin/fillforms"
+                element={
+                  <PrivateRoute>
+                    <FillForms />
                   </PrivateRoute>
                 }
               />
@@ -274,107 +291,52 @@ function App() {
                   </PrivateRoute>
                 }
               />
+             
               <Route
-                path="/fill-form"
+                path="/admin/form-builderr"
                 element={
                   <PrivateRoute>
-                    <FillForm />
+                    <FormBuilderr /> {/* Ajouter FormBuilderr ici */}
                   </PrivateRoute>
                 }
               />
               <Route
-                path="/change-password"
+                path="/admin/change-password"
                 element={
                   <PrivateRoute>
                     <ChangePassword />
                   </PrivateRoute>
                 }
               />
+              {/* Redirect or other routes */}
             </Routes>
           </Box>
-          <IconButton
-            color="inherit"
-            onClick={handleOpenDialog}
-            sx={{
-              position: "fixed",
-              bottom: 16,
-              left: 16,
-              zIndex: (theme) => theme.zIndex.drawer + 1,
-            }}
-          >
-            <SettingsIcon />
-          </IconButton>
+          <Dialog open={openDialog} onClose={handleCloseDialog}>
+            <DialogTitle>Settings</DialogTitle>
+            <DialogContent>
+              <Tabs
+                value={tabIndex}
+                onChange={handleTabChange}
+                aria-label="settings tabs"
+              >
+                <Tab label="About" />
+                <Tab label="API and How to Use" />
+                <Tab label="About Page" />
+                <Tab label="Change Password" />
+              </Tabs>
+              <Divider />
+              {tabIndex === 0 && <Typography>About content</Typography>}
+              {tabIndex === 1 && <Typography>API and How to Use content</Typography>}
+              {tabIndex === 2 && <Typography>About Page content</Typography>}
+              {tabIndex === 3 && (
+                <ChangePassword /> // Assuming you have this component for changing password
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDialog}>Close</Button>
+            </DialogActions>
+          </Dialog>
         </Box>
-        <Dialog
-          open={openDialog}
-          onClose={handleCloseDialog}
-          aria-labelledby="dialog-title"
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle id="dialog-title">Settings</DialogTitle>
-          <DialogContent>
-            <Tabs value={tabIndex} onChange={handleTabChange} aria-label="settings tabs">
-              <Tab label="About" />
-              <Tab label="API and How to Use" />
-              {isAuthenticated && <Tab label="Change Password" />} {/* Conditionally render tab */}
-            </Tabs>
-            {tabIndex === 0 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                  <InfoIcon sx={{ mr: 1 }} /> About This Application
-                </Typography>
-                <Typography variant="body1" paragraph>
-                  This application is designed for seamless form customization, offering users the ability to create and manage custom forms with ease. It provides a rich set of features for form management, including the ability to manipulate JSON data and access a variety of free form templates. The app is Dockerizable, ensuring that it can be easily containerized and deployed in various environments, making it a versatile tool for developers and users alike.
-                </Typography>
-                <Typography variant="body1" paragraph>
-                  Our goal is to provide a user-friendly experience that simplifies form creation and management. The application’s intuitive interface, combined with powerful features, makes it an ideal choice for both personal and professional use. Whether you need to build complex forms or quickly access pre-made templates, this app has you covered.
-                </Typography>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="body1" paragraph>
-                  <strong>Contact Us:</strong>
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <EmailIcon sx={{ mr: 1 }} />
-                  <Typography variant="body1">
-                    <a href="mailto:ghassen.almia@esprit.tn">ghassen.almia@esprit.tn</a>
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <EmailIcon sx={{ mr: 1 }} />
-                  <Typography variant="body1">
-                    <a href="mailto:dali@gmail.com">m.benelhajaissa@ateme.com</a>
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-                  <GitHubIcon sx={{ mr: 1 }} />
-                  <Typography variant="body1">
-                    <a href="https://github.com/MrMedAli/formbuilder" target="_blank" rel="noopener noreferrer">
-                      Visit our GitHub repository
-                    </a>
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-            {tabIndex === 1 && (
-              <Typography variant="body1" sx={{ mt: 2 }}>
-                To use the API, visit the Swagger documentation at:
-                <br />
-                <Button component="a" href={`${apiUrl}/swagger/`} target="_blank">
-                  Swagger Documentation
-                </Button>
-              </Typography>
-            )}
-            {tabIndex === 2 && isAuthenticated && ( // Conditionally render ChangePassword component
-              <Box sx={{ mt: 2 }}>
-                <ChangePassword />
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Close</Button>
-          </DialogActions>
-        </Dialog>
       </Router>
     </ThemeProvider>
   );
