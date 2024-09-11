@@ -24,7 +24,7 @@ const FormView = () => {
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/api/formulaires/${id}/`);
+        const response = await axios.get(`http://localhost:8001/api/formulaires/${id}/`);
         setForm(response.data);
       } catch (error) {
         console.error('Erreur lors de la récupération du formulaire', error);

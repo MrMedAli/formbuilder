@@ -16,8 +16,8 @@ COPY . /app/
 # Ensure the entrypoint script is executable
 RUN chmod +x /app/entrypoint.sh && ls -l /app/entrypoint.sh
 
-# Expose port 8000 to the outside world
-EXPOSE 8000
+# Expose port 8001 to the outside world
+EXPOSE 8001
 
 # Run the entrypoint script
 ENTRYPOINT ["/app/entrypoint.sh"]

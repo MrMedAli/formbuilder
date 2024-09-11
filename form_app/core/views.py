@@ -161,30 +161,7 @@ def get_form(request):
     serializer = FormSerializer(forms, many=True)
     return Response(serializer.data)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def submit_form_response(request, pk):
-    try:
-        form = Form.objects.get(pk=pk)
-        response_data = request.data.get('response_data')
-        FormResponse.objects.create(form=form, user=request.user, response_data=response_data)
-        return Response({'message': 'Form response submitted successfully'})
-    except Form.DoesNotExist:
-        return Response({'error': 'Form not found'}, status=404)
-    except Exception as e:
-        return Response({'error': str(e)}, status=400)
-    
-@api_view(['DELETE'])
-@permission_classes([AllowAny])
-def delete_form_response(request, pk):
-    try:
-        response = FormResponse.objects.get(pk=pk)
-        response.delete()
-        return Response({'message': 'Response deleted successfully'})
-    except FormResponse.DoesNotExist:
-        return Response({'error': 'Response not found'}, status=404)
-    except Exception as e:
-        return Response({'error': str(e)}, status=400)
+
     
 
 class FormsResponseViewSet(viewsets.ModelViewSet):
@@ -198,5 +175,14 @@ class FormsResponseViewSet(viewsets.ModelViewSet):
             form_response = serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      # This method is used by default for DELETE requests
+    # Use a URL parameter to handle deletion
+     # Optional: Override the destroy method for custom behavior
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
+    def perform_destroy(self, instance):
+        instance.delete()
 

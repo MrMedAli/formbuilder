@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import apiUrl from '../config';
 import axios from "axios";
+import apiUrl from '../config';
 import {
   Box,
   TextField,
@@ -21,13 +21,13 @@ import {
   InputLabel
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
+import ViewIcon from "@mui/icons-material/Visibility";
+
 import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/Download";
-import ViewIcon from "@mui/icons-material/Visibility";
 import authService from "../services/authService";
 import { parseJwt } from "../utils/jwtUtils";
-import FillForm from "./FillForm";
+import FillForms from "./FillForms";
 
 const cardStyle = {
   width: '100%',
@@ -47,11 +47,13 @@ const contentStyle = {
 };
 
 const PresetManager = () => {
+  
   const [responses, setResponses] = useState([]);
   const [filteredResponses, setFilteredResponses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [editResponse, setEditResponse] = useState(null);
+  const [formulaires, setFormulaires] = useState([]);
   const [editData, setEditData] = useState({});
   const [displayMode, setDisplayMode] = useState(false);
   const [isFillFormOpen, setIsFillFormOpen] = useState(false);
@@ -72,16 +74,38 @@ const PresetManager = () => {
     filterResponses(searchTerm, selectedFormTitle);
   }, [responses, searchTerm, selectedFormTitle, formTitles]);
 
+  useEffect(() => {
+    const fetchFormulaires = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/api/formulaires/`);
+        console.log("Fetched Formulaires:", response.data);
+        setFormulaires(response.data);
+      } catch (error) {
+        console.error("Error fetching formulaires:", error);
+      }
+    };
+  
+    fetchFormulaires();
+  }, []);
+  
   const fetchResponses = async () => {
     try {
       const headers = authService.getAuthHeader();
-      const response = await axios.get(`${apiUrl}/api/responses/`, { headers });
+      const response = await axios.get(`${apiUrl}/api/form-responses/`, { headers });
       setResponses(response.data);
     } catch (error) {
       console.error("Failed to fetch responses:", error);
     }
   };
+  const filterFormulaires = (searchTerm, selectedFormTitle) => {
+    // Implement filtering logic here
+  };
 
+  const handleClick = () => {
+    if (formulaires.length > 0) {
+      handleDelete(formulaires[0].id); // Adjust this as needed
+    }}
+  
   const fetchFormTitles = async () => {
     try {
       const headers = authService.getAuthHeader();
@@ -98,36 +122,68 @@ const PresetManager = () => {
 
   const filterResponses = (term, selectedTitle) => {
     let filtered = responses;
+  
+    // Filter by form title if selected
     if (selectedTitle) {
       filtered = filtered.filter(response => formTitles[response.form] === selectedTitle);
     }
+  
+    // Filter by search term
     if (term) {
       filtered = filtered.filter(response => {
         const valueMatch = JSON.stringify(response.response_data).toLowerCase().includes(term.toLowerCase());
-        return valueMatch;
+        const idMatch = response.form.toString().includes(term); // Check if the search term matches the form ID
+        return valueMatch || idMatch; // Match either the form ID or the response data values
       });
     }
+  
     setFilteredResponses(filtered);
   };
-
+  const handleView = (response) => {
+    setEditResponse(response);
+    setEditData(flattenObject(response.response_data));
+    setDisplayMode(true);
+  };
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
   };
+  
 
   const handleFormTitleChange = (event) => {
     setSelectedFormTitle(event.target.value);
   };
 
-  const handleDelete = async (responseId) => {
+  const handleDelete = async (formId) => {
     try {
       const headers = authService.getAuthHeader();
-      await axios.delete(`${apiUrl}/api/responses/${responseId}/`, { headers });
-      setResponses(responses.filter(response => response.id !== responseId));
-      filterResponses(searchTerm, selectedFormTitle);
+      console.log("Deleting Formulaire with ID:", formId);
+  
+      // Make the DELETE request
+      const response = await axios.delete(`${apiUrl}/api/formulaires/${formId}/`, { headers });
+  
+      // Check the response status
+      if (response.status === 204) {
+        console.log("Successfully deleted Formulaire with ID:", formId);
+        // Optionally update state or perform any other actions
+  
+        // Force reload the page
+        window.location.reload();
+      } else {
+        console.error("Unexpected response status:", response.status);
+      }
     } catch (error) {
-      console.error("Failed to delete response:", error);
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        console.error("Error response status:", error.response.status);
+        console.error("Error response headers:", error.response.headers);
+      } else {
+        console.error("Error message:", error.message);
+      }
     }
   };
+  
+  
+  
 
   const handleEdit = (response) => {
     setEditResponse(response);
@@ -180,7 +236,7 @@ const PresetManager = () => {
       const responseData = {
         response_data: unflattenObject(editData)
       };
-      await axios.put(`${apiUrl}/api/responses/${editResponse.id}/`, responseData, { headers });
+      await axios.put(`${apiUrl}/api/form-responses/${editResponse.id}/`, responseData, { headers });
       setResponses(responses.map(resp => (resp.id === editResponse.id ? { ...resp, response_data: responseData.response_data } : resp)));
       setEditResponse(null);
     } catch (error) {
@@ -278,92 +334,108 @@ const PresetManager = () => {
       <Box mt={2} display="flex" alignItems="center" gap={2}>
         <TextField
           fullWidth
-          placeholder="Search by form title or value..."
+          placeholder="Search by form ID or value..."
           value={searchTerm}
           onChange={handleSearchChange}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
-                <IconButton>
-                  <SearchIcon />
-                </IconButton>
+                <SearchIcon />
               </InputAdornment>
             ),
           }}
         />
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel id="form-title-label">Filter by Form Title</InputLabel>
-          <Select
-            labelId="form-title-label"
-            id="form-title-select"
-            value={selectedFormTitle}
-            label="Filter by Form Title"
-            onChange={handleFormTitleChange}
-          >
-            <MenuItem value="">
-              <em>All</em>
-            </MenuItem>
-            {Object.values(formTitles).map((title, index) => (
-              <MenuItem key={index} value={title}>
-                {title}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        
       </Box>
-
       <Grid container spacing={2} mt={2}>
-        {filteredResponses.map(response => (
-          <Grid item xs={12} md={6} lg={4} key={response.id}>
+        {filteredResponses.map((response) => (
+          <Grid item xs={12} sm={6} md={4} key={response.id}>
             <Card sx={cardStyle} onClick={() => handleViewToggle(response)}>
-              <CardContent sx={contentStyle}>
+              <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  {formTitles[response.form]}
+                  Form ID: {response.form}
                 </Typography>
-                {renderResponseData(response.response_data)}
+                <Typography variant="body2" sx={contentStyle}>
+                  {JSON.stringify(response.response_data, null, 2)}
+                </Typography>
               </CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 8, p: 2 }}>
-                <IconButton aria-label="edit" color="primary" onClick={() => handleEdit(response)}>
-                      <EditIcon />
-                </IconButton>
-                <IconButton aria-label="delete" color="error" onClick={() => handleDelete(response.id)}>
-                      <DeleteIcon />
-                </IconButton>
-                <IconButton aria-label="download" onClick={() => handleDownload(response)}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
+                <IconButton onClick={(e) => { e.stopPropagation(); handleDownload(response); }}>
                   <DownloadIcon />
                 </IconButton>
-                <IconButton aria-label="view" sx={{color:"black"}} onClick={() => handleViewToggle(response)}>
-                  <ViewIcon />
-                </IconButton>
+                <IconButton
+              color="primary"
+              onClick={() => handleView(response)}
+            >
+              <ViewIcon />
+            </IconButton>
+                
+                {currentUser && (
+                  <>
+                 
+                    
+      {formulaires.length > 0 && (
+        <IconButton
+          color="error"
+          onClick={handleClick}
+          aria-label="delete"
+        >
+          <DeleteIcon />
+        </IconButton>
+      )}
+      {formulaires.length === 0 ? (
+        <p>No Formulaires available.</p>
+      ) : (
+        formulaires.map(formulaire => (
+          <div key={formulaire.id}>
+            {/* Render your formulaire content here */}
+            <p>{formulaire.name}</p> {/* Example content */}
+          </div>
+        ))
+      )}
+   
+
+
+                  </>
+                )}
+                
               </Box>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      <Dialog open={!!editResponse} onClose={handleEditCancel} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {displayMode ? "View Response" : "Edit Response"}
-        </DialogTitle>
-        <DialogContent dividers>
-          {renderResponseData(editData, !displayMode)}
+      <Dialog open={editResponse !== null} onClose={handleEditCancel}>
+        <DialogTitle>Edit Response</DialogTitle>
+        <DialogContent>
+          {editResponse && renderResponseData(editResponse.response_data, true)}
         </DialogContent>
         <DialogActions>
-          {displayMode ? (
-            <Button onClick={handleCloseView}>Close</Button>
-          ) : (
-            <>
-              <Button onClick={handleEditCancel}>Cancel</Button>
-              <Button onClick={handleEditSave} color="primary" variant="contained">Save</Button>
-            </>
-          )}
+          <Button onClick={handleEditCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleEditSave} color="primary">
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={isFillFormOpen} onClose={handleCloseFillForm} maxWidth="md" fullWidth>
-        <DialogTitle>Create New Preset</DialogTitle>
+      <Dialog open={displayMode} onClose={handleCloseView}>
+        <DialogTitle>View Response</DialogTitle>
         <DialogContent>
-          <FillForm onClose={handleCloseFillForm} />
+          {editResponse && renderResponseData(editResponse.response_data, false)}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseView} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={isFillFormOpen} onClose={handleCloseFillForm} fullWidth maxWidth="md">
+        <DialogTitle>Add New Preset</DialogTitle>
+        <DialogContent>
+          <FillForms onClose={handleCloseFillForm} />
         </DialogContent>
       </Dialog>
     </Box>

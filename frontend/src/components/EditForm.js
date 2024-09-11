@@ -13,7 +13,7 @@ const EditForm = () => {
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/api/formulaires/${id}/`);
+        const response = await axios.get(`http://localhost:8001/api/formulaires/${id}/`);
         setForm(response.data);
         setFormLoading(false);
       } catch (error) {
@@ -30,7 +30,7 @@ const EditForm = () => {
 
   const handleSave = async () => {
     try {
-      await axios.put(`http://localhost:8000/api/formulaires/${id}/`, form);
+      await axios.put(`http://localhost:8001/api/formulaires/${id}/`, form);
       alert('Formulaire mis à jour avec succès');
       window.location.reload(); // Reload the current page
     } catch (error) {
@@ -47,10 +47,10 @@ const EditForm = () => {
   return (
     <div style={{ padding: '20px' }}>
       <Typography variant="h4" gutterBottom>
-        Édition du Formulaire
+        Edit Form
       </Typography>
       <TextField
-        label="Nom du formulaire"
+        label="Form Name"
         variant="outlined"
         fullWidth
         margin="normal"
@@ -66,7 +66,7 @@ const EditForm = () => {
         }))}
         style={{ marginBottom: '20px' }}
       >
-        Ajouter Champ
+        Add Field
       </Button>
       {form.fields.map((field, index) => (
         <NestedField
@@ -77,11 +77,11 @@ const EditForm = () => {
       ))}
       <Button
         variant="contained"
-        color="secondary"
+        color="primary"
         onClick={handleSave}
         style={{ marginTop: '20px' }}
       >
-        Enregistrer
+        Save
       </Button>
     </div>
   );

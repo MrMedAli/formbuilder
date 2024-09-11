@@ -29,12 +29,12 @@ const NestedField = ({ field, onUpdate }) => {
             onClick={addNestedField}
             style={{ marginBottom: '10px' }}
           >
-            Ajouter Champ dans Objet
+            Add Nested Field
           </Button>
           {nestedFields.map((nestedField, index) => (
             <div key={index} style={{ marginBottom: '10px' }}>
               <TextField
-                label="Nom du champ"
+                label="Field Name"
                 variant="outlined"
                 fullWidth
                 margin="normal"
@@ -59,7 +59,7 @@ const NestedField = ({ field, onUpdate }) => {
         </>
       )}
       <TextField
-        label="Nom du champ"
+        label="Field Name"
         variant="outlined"
         fullWidth
         margin="normal"

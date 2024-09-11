@@ -10,4 +10,4 @@ python manage.py collectstatic --noinput
 
 # Start the Gunicorn server
 echo "Starting Gunicorn..."
-gunicorn --bind 0.0.0.0:8000 form_app.wsgi:application
+gunicorn --bind 0.0.0.0:8001 form_app.wsgi:application

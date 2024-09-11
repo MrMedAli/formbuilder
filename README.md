@@ -95,7 +95,7 @@ Start the Django development server:
 ```bash
 python manage.py runserver
 ```
-The backend API should now be accessible at http://localhost:8000/api/.
+The backend API should now be accessible at http://localhost:8001/api/.
 
 ### 9. Install Frontend Dependencies
 Navigate to the frontend directory and install the required Node.js packages:

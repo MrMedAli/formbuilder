@@ -6,6 +6,7 @@ import {
   Navigate,
   Link,
 } from "react-router-dom";
+import PreviewIcon from '@mui/icons-material/Preview';
 import DriveEtaIcon from '@mui/icons-material/DriveEta';
 import InfoIcon from '@mui/icons-material/Info';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
@@ -25,8 +26,7 @@ import ListItemText from "@mui/material/ListItemText";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import PeopleIcon from "@mui/icons-material/People";
-import AddBoxIcon from "@mui/icons-material/AddBox";
-import SettingsIcon from "@mui/icons-material/Settings";
+
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -42,13 +42,10 @@ import FormBuilderr from "./components/FormBuilderr"; // Importer FormBuilderr
 import PresetManager from "./components/PresetManager";
 import Login from "./components/Login";
 import FormManager from "./components/FormManager";
-import FillForm from "./components/FillForm";
 import PrivateRoute from "./components/PrivateRoute";
 import authService from "./services/authService";
 import ChangePassword from "./components/ChangePassword";
 import FormTemplates from "./components/FormTemplates";
-import FormBuilder from "./components/FormBuilder";
-import FormulaireList from "./components/FormulaireList";
 import FormView from "./components/FormView";
 import EditForm from "./components/EditForm";
 import FillForms from "./components/FillForms";
@@ -127,10 +124,9 @@ function App() {
   const menuItems = [
     { text: "Users", icon: <PeopleIcon />, path: "/admin/users" },
     { text: "Presets", icon: <CreditCardIcon />, path: "/admin/presets" },
-    { text: "Form Builder", icon: <AddBoxIcon />, path: "/admin/form-builder" },
-    { text: "Form Template", icon: <DynamicFormIcon />, path: "/admin/formtemplate" },
+    { text: "Form Template", icon: <PreviewIcon />, path: "/admin/formtemplate" },
     { text: "Form Builderr", icon: <DynamicFormIcon />, path: "/admin/form-builderr" },
-    { text: "Fill Forms", icon: <DynamicFormIcon />, path: "/admin/fillforms" }, // Add FillForms here
+    
     // Add this line for FillForms
   ];
 
@@ -255,7 +251,7 @@ function App() {
                   </PrivateRoute>
                 }
               />
-              <Route path="/formulaires" element={<FormulaireList />} />
+             
               <Route path="/formulaires/:id" element={<FormView />} />
               <Route path="/formulaires/edit/:id" element={<EditForm />} />
               <Route
@@ -275,14 +271,7 @@ function App() {
                   </PrivateRoute>
                 }
               />
-              <Route
-                path="/admin/form-builder"
-                element={
-                  <PrivateRoute>
-                    <FormBuilder />
-                  </PrivateRoute>
-                }
-              />
+          
               <Route
                 path="/admin/formtemplate"
                 element={
